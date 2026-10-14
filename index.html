@@ -1228,76 +1228,169 @@ function openPickerModal(idx) {
     if (!p) return;
 
     var idle = p.idleMin || 0;
-    var idleClass = idle > 30 ? 'accent' : (idle > 15 ? '' : 'accent3');
+    var idleStr = idle >= 60 ? Math.floor(idle/60) + ' sa ' + (idle%60) + ' dk' : idle + ' dk';
+    var floorColors = {P1:'#42a5f5',P2:'#66bb6a',P3:'#ffa726',P4:'#ab47bc',P5:'#26c6da',P6:'#ef5350',HRV:'#ffee58'};
+    var floorColor = floorColors[p.floor] || '#888';
 
-    // Header
-    var headerHTML = '' +
-        '<div class="modal-header-text">' +
-            '<h2>' + (p.name || p.login || 'Bilinmiyor') + '</h2>' +
-            '<span class="modal-login">@' + (p.login || '-') + '</span>' +
-        '</div>';
+    // Overlay
+    var old = document.getElementById('picker-modal-overlay');
+    if (old) old.remove();
 
-    // Floor changes
-    var floorChangesHTML = '';
-    if (p.floorChanges && Array.isArray(p.floorChanges) && p.floorChanges.length > 0) {
-        floorChangesHTML = '<div class="modal-info-item full-width">' +
-            '<div class="modal-info-label"><i class="fa-solid fa-shuffle"></i> Kat Değişimleri</div>' +
-            '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">' +
-            p.floorChanges.map(function(fc) {
-                if (typeof fc === 'object' && fc.from !== undefined) {
-                    return '<span class="modal-floor-change"><i class="fa-solid fa-arrow-right" style="font-size:10px;"></i> Kat ' + fc.from + ' \u2192 Kat ' + fc.to + (fc.time ? ' <span style="opacity:0.6;">(' + fc.time + ')</span>' : '') + '</span>';
-                }
-                return '<span class="modal-floor-change">' + fc + '</span>';
-            }).join('') +
-            '</div></div>';
-    } else if (typeof p.floorChanges === 'number' && p.floorChanges > 0) {
-        floorChangesHTML = '<div class="modal-info-item">' +
-            '<div class="modal-info-label"><i class="fa-solid fa-shuffle"></i> Kat Değişimi</div>' +
-            '<div class="modal-info-value accent2">' + p.floorChanges + ' kez</div>' +
-        '</div>';
-    }
-
-    // Message sent
-    var msgHTML;
-    if (p.msgSent) {
-        msgHTML = '<span class="modal-msg-badge modal-msg-sent"><i class="fa-solid fa-check-circle"></i> Gönderildi</span>';
-    } else {
-        msgHTML = '<span class="modal-msg-badge modal-msg-not"><i class="fa-regular fa-circle-xmark"></i> Gönderilmedi</span>';
-    }
-
-    // Body
-    var bodyHTML = '<div class="modal-info-grid">' +
-        '<div class="modal-info-item">' +
-            '<div class="modal-info-label"><i class="fa-solid fa-building"></i> Kat</div>' +
-            '<div class="modal-info-value accent2">Kat ' + (p.floor || '?') + '</div>' +
-        '</div>' +
-        '<div class="modal-info-item">' +
-            '<div class="modal-info-label"><i class="fa-solid fa-hourglass-half"></i> Idle Süresi</div>' +
-            '<div class="modal-info-value mono ' + idleClass + '">' + idle + ' dk</div>' +
-        '</div>' +
-        '<div class="modal-info-item">' +
-            '<div class="modal-info-label"><i class="fa-solid fa-user-tie"></i> Manager</div>' +
-            '<div class="modal-info-value">' + (p.manager || '-') + '</div>' +
-        '</div>' +
-        '<div class="modal-info-item">' +
-            '<div class="modal-info-label"><i class="fa-solid fa-location-dot"></i> Lokasyon</div>' +
-            '<div class="modal-info-value">' + (p.location || p.lastLocation || '-') + '</div>' +
-        '</div>' +
-        '<div class="modal-info-item">' +
-            '<div class="modal-info-label"><i class="fa-solid fa-envelope"></i> Mesaj Durumu</div>' +
-            '<div class="modal-info-value">' + msgHTML + '</div>' +
-        '</div>' +
-        '<div class="modal-info-item">' +
-            '<div class="modal-info-label"><i class="fa-regular fa-clock"></i> Son Görülme</div>' +
-            '<div class="modal-info-value mono" style="font-size:13px;">' + (p.lastSeen || '-') + '</div>' +
-        '</div>' +
-        floorChangesHTML +
-    '</div>';
-
-    document.getElementById('modalHeader').innerHTML = headerHTML;
-    document.getElementById('modalBody').innerHTML = bodyHTML;
-    document.getElementById('pickerModal').classList.add('open');
+    var overlay = document.createElement('div');
+    overlay.id = 'picker-modal-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); document.body.style.overflow = ''; };
+    document.addEventListener('keydown', function escHandler(e) { if (e.key === 'Escape') { overlay.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', escHandler); } });
     document.body.style.overflow = 'hidden';
+
+    var modal = document.createElement('div');
+    modal.style.cssText = 'background:linear-gradient(135deg,#16213e,#0f3460);border:1px solid rgba(255,255,255,0.1);border-radius:16px;max-width:680px;width:95%;max-height:85vh;overflow-y:auto;padding:0;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+
+    // ========== HEADER ==========
+    var headerHtml = '<div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:flex-start;">';
+    headerHtml += '<div>';
+    headerHtml += '<div style="font-size:20px;font-weight:700;color:#e0e0e0;">' + (p.name || p.login) + '</div>';
+    headerHtml += '<div style="font-size:13px;color:#a0a0b8;margin-top:4px;">' + (p.login || '') + ' | Kat: <span style="color:' + floorColor + ';font-weight:600;">' + (p.floor || '') + '</span> | Manager: ' + (p.manager || '') + '</div>';
+    headerHtml += '<div style="margin-top:8px;font-size:24px;font-weight:800;color:#ff9800;font-family:Consolas,monospace;">Toplam Idle: ' + idleStr + '</div>';
+    headerHtml += '</div>';
+    headerHtml += '<button onclick="document.getElementById(\'picker-modal-overlay\').remove();document.body.style.overflow=\'\';" style="background:rgba(244,67,54,0.15);border:1px solid rgba(244,67,54,0.3);color:#f44336;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>';
+    headerHtml += '</div>';
+
+    var bodyHtml = '<div style="padding:20px 24px;">';
+
+    // ========== LOKASYON DAĞILIMI ==========
+    var locStats = p.locationStats || {};
+    var locKeys = Object.keys(locStats).sort(function(a,b) { return locStats[b] - locStats[a]; });
+    if (locKeys.length > 0) {
+        var maxLoc = locStats[locKeys[0]] || 1;
+        bodyHtml += '<div style="margin-bottom:20px;">';
+        bodyHtml += '<div style="font-size:14px;font-weight:600;color:#e94560;margin-bottom:10px;">📍 Lokasyon Dağılımı</div>';
+        for (var li = 0; li < locKeys.length; li++) {
+            var lk = locKeys[li];
+            var lv = locStats[lk];
+            var pct = Math.round((lv / maxLoc) * 100);
+            var lvStr = lv >= 60 ? Math.floor(lv/60) + ' sa ' + (lv%60) + ' dk' : lv + ' dk';
+            var barColor = li === 0 ? '#ff9800' : (li === 1 ? '#ffa726' : '#ffb74d');
+            bodyHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
+            bodyHtml += '<div style="min-width:140px;font-size:12px;color:#a0a0b8;font-family:Consolas,monospace;text-align:right;">' + lk + '</div>';
+            bodyHtml += '<div style="flex:1;height:20px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;">';
+            bodyHtml += '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,' + barColor + ',' + barColor + 'aa);border-radius:4px;transition:width 0.3s;"></div>';
+            bodyHtml += '</div>';
+            bodyHtml += '<div style="min-width:60px;font-size:12px;color:#ff9800;font-weight:600;">' + lvStr + '</div>';
+            bodyHtml += '</div>';
+        }
+        bodyHtml += '</div>';
+    }
+
+    // ========== İDLE SÜRE DAĞILIMI ==========
+    var idleDist = p.idleDistribution || {};
+    var distKeys = Object.keys(idleDist);
+    if (distKeys.length > 0) {
+        var distOrder = ['5 dk','10 dk','15 dk','20 dk','25-30 dk','30+ dk'];
+        var distColors = {'5 dk':'#10ac84','10 dk':'#f39c12','15 dk':'#e67e22','20 dk':'#ff5722','25-30 dk':'#e94560','30+ dk':'#c0392b'};
+        bodyHtml += '<div style="margin-bottom:20px;">';
+        bodyHtml += '<div style="font-size:14px;font-weight:600;color:#0abde3;margin-bottom:10px;">📊 İdle Süre Dağılımı</div>';
+        bodyHtml += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+        for (var doi = 0; doi < distOrder.length; doi++) {
+            var dk = distOrder[doi];
+            var cnt = idleDist[dk] || 0;
+            if (cnt <= 0) continue;
+            var dc = distColors[dk] || '#888';
+            bodyHtml += '<div style="background:rgba(255,255,255,0.05);border:1px solid ' + dc + '33;border-radius:8px;padding:8px 14px;text-align:center;">';
+            bodyHtml += '<div style="font-size:13px;font-weight:600;color:' + dc + ';">' + dk + '</div>';
+            bodyHtml += '<div style="font-size:18px;font-weight:800;color:#fff;margin-top:2px;">' + cnt + ' <span style="font-size:11px;color:#a0a0b8;">adet</span></div>';
+            bodyHtml += '</div>';
+        }
+        bodyHtml += '</div>';
+        var totalPeriods = 0; for (var tp in idleDist) totalPeriods += idleDist[tp];
+        bodyHtml += '<div style="font-size:11px;color:#6c6c80;margin-top:6px;">Toplam ' + totalPeriods + ' ayrı idle periyodu</div>';
+        bodyHtml += '</div>';
+    }
+
+    // ========== İDLE PERİYOTLARI (KANIT) ==========
+    var periods = p.idlePeriods || [];
+    if (periods.length > 0) {
+        bodyHtml += '<div style="margin-bottom:20px;">';
+        bodyHtml += '<div style="font-size:14px;font-weight:600;color:#f39c12;margin-bottom:10px;">⏱ İdle Periyotları (Kanıt)</div>';
+        bodyHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+        bodyHtml += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">#</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Başlangıç</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Bitiş</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Süre</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Lokasyon</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Tarama Saatleri</th>';
+        bodyHtml += '</tr></thead><tbody>';
+        for (var pi = 0; pi < periods.length; pi++) {
+            var pr = periods[pi];
+            var durColor = pr.duration <= 5 ? '#10ac84' : (pr.duration <= 10 ? '#f39c12' : (pr.duration <= 20 ? '#e67e22' : '#e94560'));
+            var durStr = pr.duration >= 60 ? Math.floor(pr.duration/60) + ' sa ' + (pr.duration%60) + ' dk' : pr.duration + ' dk';
+            var scanStr = (pr.scanTimes || []).join(', ');
+            bodyHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">';
+            bodyHtml += '<td style="padding:6px 8px;color:#a0a0b8;">' + (pi+1) + '</td>';
+            bodyHtml += '<td style="padding:6px 8px;color:#e0e0e0;font-weight:500;">' + (pr.start || '-') + '</td>';
+            bodyHtml += '<td style="padding:6px 8px;color:#e0e0e0;font-weight:500;">' + (pr.end || '-') + '</td>';
+            bodyHtml += '<td style="padding:6px 8px;"><span style="color:' + durColor + ';font-weight:700;">' + durStr + '</span></td>';
+            bodyHtml += '<td style="padding:6px 8px;color:#a0a0b8;font-family:Consolas,monospace;font-size:11px;">' + (pr.location || '-') + '</td>';
+            bodyHtml += '<td style="padding:6px 8px;color:#6c6c80;font-size:10px;">' + scanStr + '</td>';
+            bodyHtml += '</tr>';
+        }
+        bodyHtml += '</tbody></table>';
+        bodyHtml += '</div>';
+    }
+
+    // ========== KAT DEĞİŞİMLERİ ==========
+    var katCh = p.katChanges || [];
+    if (katCh.length > 0) {
+        bodyHtml += '<div style="margin-bottom:20px;padding:12px;background:rgba(33,150,243,0.08);border-left:3px solid #2196f3;border-radius:8px;">';
+        bodyHtml += '<div style="font-size:14px;font-weight:600;color:#2196f3;margin-bottom:8px;">🔄 Kat Değişimleri (' + katCh.length + 'x)</div>';
+        for (var kci = 0; kci < katCh.length; kci++) {
+            var kc = katCh[kci];
+            bodyHtml += '<div style="font-size:12px;color:#a0a0b8;margin-bottom:4px;">';
+            bodyHtml += '<span style="color:#0abde3;font-weight:600;">' + (kc.time || '') + '</span> — ';
+            bodyHtml += '<span style="color:#ef5350;">' + (kc.from || '?') + '</span> → <span style="color:#66bb6a;">' + (kc.to || '?') + '</span>';
+            if (kc.fromLoc || kc.toLoc) bodyHtml += ' <span style="color:#6c6c80;font-size:10px;">(' + (kc.fromLoc||'') + ' → ' + (kc.toLoc||'') + ')</span>';
+            bodyHtml += '</div>';
+        }
+        bodyHtml += '</div>';
+    }
+
+    // ========== GÜNLÜK ÖZET MESAJI ==========
+    var firstName = (p.name || '').split(',')[1] || (p.name || '').split(',')[0] || p.login || '';
+    firstName = firstName.trim();
+    var msgText = 'Selam ' + firstName + ', bugün gün içerisinde toplam ' + idleStr + ' idle yaptın.';
+    if (locKeys.length > 0) {
+        var locParts = [];
+        for (var mi = 0; mi < Math.min(locKeys.length, 4); mi++) {
+            var mlk = locKeys[mi];
+            var mlv = locStats[mlk];
+            var mlvStr = mlv >= 60 ? Math.floor(mlv/60) + ' sa ' + (mlv%60) + ' dk' : mlv + ' dk';
+            locParts.push(mlk + ' lokasyonunda ' + mlvStr);
+        }
+        msgText += ' ' + locParts.join(', ') + ' idle tespit edildi.';
+    }
+    if (periods.length > 0) {
+        msgText += ' Toplam ' + periods.length + ' ayrı idle periyodu';
+        var distParts = [];
+        for (var dpi in idleDist) { if (idleDist[dpi] > 0) distParts.push(idleDist[dpi] + ' adet ' + dpi); }
+        if (distParts.length) msgText += ' (' + distParts.join(', ') + ')';
+        msgText += '.';
+    }
+    msgText += ' Bilgin olsun. İyi çalışmalar 👍';
+
+    bodyHtml += '<div style="margin-bottom:10px;padding:14px;background:rgba(233,69,96,0.08);border-left:3px solid #e94560;border-radius:8px;">';
+    bodyHtml += '<div style="font-size:14px;font-weight:600;color:#e94560;margin-bottom:8px;">📩 Günlük Özet Mesajı (Mola Öncesi)</div>';
+    bodyHtml += '<textarea id="picker-modal-msg" style="width:100%;min-height:80px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e0e0e0;padding:10px;font-size:12px;font-family:inherit;resize:vertical;">' + msgText + '</textarea>';
+    bodyHtml += '<div style="margin-top:8px;display:flex;gap:8px;">';
+    bodyHtml += '<button onclick="navigator.clipboard.writeText(document.getElementById(\'picker-modal-msg\').value);this.textContent=\'✅ Kopyalandı!\';setTimeout(function(){this.textContent=\'📋 Mesajı Kopyala\';}.bind(this),2000);" style="padding:6px 14px;border-radius:8px;border:none;background:#10ac84;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">📋 Mesajı Kopyala</button>';
+    bodyHtml += '</div>';
+    bodyHtml += '</div>';
+
+    bodyHtml += '</div>'; // body kapanış
+
+    modal.innerHTML = headerHtml + bodyHtml;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
 }
 
 function closePickerModal() {

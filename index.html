@@ -479,7 +479,7 @@ a { color: var(--color-link, var(--color-primary)); }</style>
         }
         .chart-title i { color: var(--accent2); font-size: 16px; }
 
-        /* ===== TOP 10 TABLE ===== */
+        /* ===== TOP 20 TABLE ===== */
         .table-card {
             background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-alt) 100%);
             border: 1px solid var(--border); border-radius: var(--radius);
@@ -496,8 +496,9 @@ a { color: var(--color-link, var(--color-primary)); }</style>
             padding: 10px 12px; border-bottom: 1px solid var(--border);
             color: var(--text-primary); vertical-align: middle;
         }
-        tbody tr { transition: background 0.15s; }
-        tbody tr:hover td { background: rgba(255,255,255,0.03); }
+        tbody tr { transition: background 0.15s; cursor: pointer; }
+        tbody tr:hover td { background: rgba(10,189,227,0.07); }
+        tbody tr:active td { background: rgba(10,189,227,0.12); }
         .picker-row { display: flex; align-items: center; gap: 10px; }
         .picker-avatar {
             width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
@@ -520,6 +521,116 @@ a { color: var(--color-link, var(--color-primary)); }</style>
         .idle-high { background: rgba(233,69,96,0.15); color: var(--accent); }
         .idle-med { background: rgba(243,156,18,0.15); color: var(--accent4); }
         .idle-low { background: rgba(16,172,132,0.15); color: var(--accent3); }
+
+        /* ===== INITIALS AVATAR (shared) ===== */
+        .picker-avatar-initials {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; color: #fff;
+            text-transform: uppercase; flex-shrink: 0;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .picker-avatar-initials.large {
+            width: 64px; height: 64px; font-size: 22px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+        }
+
+        /* ===== PICKER DETAIL MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 9000;
+            background: rgba(10,10,25,0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            align-items: center; justify-content: center;
+            padding: 24px;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        .modal-overlay.open { display: flex; }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(24px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-card {
+            background: linear-gradient(160deg, #16213e 0%, #1a1a2e 50%, #0f3460 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            width: 100%; max-width: 480px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+            position: relative;
+            animation: modalSlideUp 0.25s ease-out;
+            overflow: hidden;
+        }
+        .modal-close {
+            position: absolute; top: 16px; right: 16px;
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary); font-size: 14px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; z-index: 2;
+        }
+        .modal-close:hover { background: rgba(233,69,96,0.2); color: var(--accent); border-color: rgba(233,69,96,0.3); }
+
+        .modal-header {
+            display: flex; align-items: center; gap: 16px;
+            padding: 28px 28px 20px; position: relative;
+        }
+        .modal-header::after {
+            content: ''; position: absolute; bottom: 0; left: 28px; right: 28px;
+            height: 1px; background: var(--border);
+        }
+        .modal-header-text h2 {
+            font-size: 18px; font-weight: 700; color: var(--text-primary);
+            margin-bottom: 2px; line-height: 1.3;
+        }
+        .modal-header-text .modal-login {
+            font-size: 13px; color: var(--accent2); font-family: var(--font-mono);
+        }
+
+        .modal-body { padding: 20px 28px 28px; }
+        .modal-info-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .modal-info-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px;
+        }
+        .modal-info-item.full-width { grid-column: 1 / -1; }
+        .modal-info-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--text-muted); margin-bottom: 6px; font-weight: 500;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .modal-info-label i { font-size: 11px; }
+        .modal-info-value {
+            font-size: 15px; font-weight: 600; color: var(--text-primary);
+        }
+        .modal-info-value.mono { font-family: var(--font-mono); }
+        .modal-info-value.accent { color: var(--accent); }
+        .modal-info-value.accent2 { color: var(--accent2); }
+        .modal-info-value.accent3 { color: var(--accent3); }
+
+        .modal-msg-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        }
+        .modal-msg-sent { background: rgba(16,172,132,0.15); color: #10ac84; }
+        .modal-msg-not  { background: rgba(233,69,96,0.12); color: var(--accent); }
+        .modal-floor-change {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 3px 10px; border-radius: 8px; font-size: 12px;
+            background: rgba(10,189,227,0.1); color: var(--accent2);
+            font-family: var(--font-mono); font-weight: 500;
+            margin: 3px 4px 3px 0;
+        }
 
         /* ===== FOOTER ===== */
         .footer {
@@ -561,6 +672,10 @@ a { color: var(--color-link, var(--color-primary)); }</style>
             .header-left h1 { font-size: 18px; }
             .kpi-value { font-size: 24px; }
             .kpi-card { padding: 14px; }
+            .modal-card { max-width: 100%; }
+            .modal-info-grid { grid-template-columns: 1fr; }
+            .modal-header { padding: 20px 20px 16px; }
+            .modal-body { padding: 16px 20px 20px; }
         }
         @media (max-width: 480px) {
             .kpi-grid { grid-template-columns: 1fr; }
@@ -660,9 +775,9 @@ a { color: var(--color-link, var(--color-primary)); }</style>
             </div>
         </div>
 
-        <!-- Top 10 Table -->
+        <!-- Top 20 Table -->
         <div class="table-card">
-            <div class="chart-title"><i class="fa-solid fa-ranking-star"></i> Top 10 Idle Picker</div>
+            <div class="chart-title"><i class="fa-solid fa-ranking-star"></i> Top 20 Idle Picker</div>
             <table>
                 <thead>
                     <tr>
@@ -671,13 +786,23 @@ a { color: var(--color-link, var(--color-primary)); }</style>
                         <th>Kat</th>
                         <th>Manager</th>
                         <th>Idle (dk)</th>
+                        <th>Durum</th>
                         <th>Son Görülme</th>
                     </tr>
                 </thead>
                 <tbody id="topPickerTable">
-                    <tr><td colspan="6" class="no-data"><div class="loading-overlay"><div class="spinner"></div>Veri yükleniyor...</div></td></tr>
+                    <tr><td colspan="7" class="no-data"><div class="loading-overlay"><div class="spinner"></div>Veri yükleniyor...</div></td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- ===== PICKER DETAIL MODAL ===== -->
+    <div class="modal-overlay" id="pickerModal">
+        <div class="modal-card" id="pickerModalCard">
+            <button class="modal-close" id="modalCloseBtn" title="Kapat"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-header" id="modalHeader"></div>
+            <div class="modal-body" id="modalBody"></div>
         </div>
     </div>
 
@@ -689,13 +814,13 @@ a { color: var(--color-link, var(--color-primary)); }</style>
 <script>
 // =========================================================
 //  CONFIGURATION
-//  ⚠️ GIST_ID ve GITHUB_USERNAME'i değiştirin!
 // =========================================================
-const GIST_ID = '2c83f09073d462622563534f4ca7cff1';
-const GITHUB_USERNAME = 'ist2ops';
-const BADGE_PHOTO_BASE = 'https://internal-cdn.amazon.com/badgephotos.amazon.com/?uid=';
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 dakika
-const DATA_URL = 'https://gist.githubusercontent.com/' + GITHUB_USERNAME + '/' + GIST_ID + '/raw/ist2_dashboard_data.json';
+var GIST_ID = '2c83f09073d462622563534f4ca7cff1';
+var GITHUB_USERNAME = 'ist2ops';
+var BADGE_PHOTO_BASE = 'https://internal-cdn.amazon.com/badgephotos.amazon.com/?uid=';
+var REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+var DATA_URL = 'https://gist.githubusercontent.com/' + GITHUB_USERNAME + '/' + GIST_ID + '/raw/ist2_dashboard_data.json';
+var TOP_N = 20; // Top N picker limit
 
 // =========================================================
 //  STATE
@@ -704,6 +829,33 @@ var currentData = null;
 var activeFloor = 'all';
 var refreshTimer = null;
 var countdownSec = 300;
+
+// =========================================================
+//  AVATAR HELPERS
+// =========================================================
+var avatarColors = ['#e94560','#0abde3','#10ac84','#f39c12','#9b59b6','#e74c3c','#3498db','#1abc9c','#e67e22','#2ecc71'];
+
+function getInitials(p) {
+    var nameParts = (p.name || p.login || '?').split(',');
+    var initials;
+    if (nameParts.length >= 2) {
+        initials = (nameParts[1].trim()[0] || '') + (nameParts[0].trim()[0] || '');
+    } else {
+        initials = (p.name || p.login || '?').substring(0, 2);
+    }
+    return initials.toUpperCase();
+}
+
+function getAvatarColor(login) {
+    var idx = 0;
+    for (var i = 0; i < (login || '').length; i++) idx += (login || '').charCodeAt(i);
+    return avatarColors[idx % avatarColors.length];
+}
+
+function avatarHTML(p, large) {
+    var cls = 'picker-avatar-initials' + (large ? ' large' : '');
+    return '<div class="' + cls + '" style="background:' + getAvatarColor(p.login) + ';">' + getInitials(p) + '</div>';
+}
 
 // =========================================================
 //  HIGHCHARTS THEME
@@ -872,7 +1024,6 @@ function renderKPIs() {
     document.getElementById('kpiAvgIdle').textContent = avgIdle;
     animateValue('kpiHighIdle', highIdle);
 
-    // En fazla idle kat
     var topFloor = '-', topFloorIdle = 0;
     for (var f in floorStats) {
         var idle = floorStats[f].totalIdleMin || 0;
@@ -881,7 +1032,6 @@ function renderKPIs() {
     document.getElementById('kpiTopFloor').textContent = topFloor !== '-' ? 'Kat ' + topFloor : '-';
     document.getElementById('kpiTopFloorSub').textContent = topFloorIdle > 0 ? topFloorIdle + ' dk toplam idle' : '';
 
-    // Filtered subtitle
     if (activeFloor !== 'all') {
         document.getElementById('kpiPickerSub').textContent = 'Kat ' + activeFloor + ' filtreli';
     } else {
@@ -993,7 +1143,6 @@ function renderMgrChart() {
     var mgrData = [];
 
     if (activeFloor !== 'all' && currentData.pickers) {
-        // Filtreli picker'lardan manager stats hesapla
         var floorPickers = getFilteredPickers();
         var mgrMap = {};
         floorPickers.forEach(function(p) {
@@ -1036,38 +1185,138 @@ function renderMgrChart() {
     });
 }
 
-// ---- TOP 10 TABLE ----
+// =========================================================
+//  TOP 20 TABLE
+// =========================================================
 function renderTopTable() {
     var pickers = getFilteredPickers();
-    var sorted = pickers.slice().sort(function(a, b) { return (b.idleMin || 0) - (a.idleMin || 0); }).slice(0, 10);
+    var sorted = pickers.slice().sort(function(a, b) { return (b.idleMin || 0) - (a.idleMin || 0); }).slice(0, TOP_N);
     var tbody = document.getElementById('topPickerTable');
 
     if (sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="no-data">Picker verisi yok</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="no-data">Picker verisi yok</td></tr>';
         return;
     }
+
+    // Store sorted list for modal access
+    window._topPickersSorted = sorted;
 
     tbody.innerHTML = sorted.map(function(p, i) {
         var idle = p.idleMin || 0;
         var badgeClass = idle > 30 ? 'idle-high' : (idle > 15 ? 'idle-med' : 'idle-low');
-        var badgeUrl = p.login ? BADGE_PHOTO_BASE + p.login : '';
-        var avatarHtml;
-        if (badgeUrl) {
-            avatarHtml = '<img class="picker-avatar" src="' + badgeUrl + '" onerror="this.outerHTML=\'<div class=picker-avatar-placeholder><i class=fa-solid fa-user></i></div>\'" alt="">';
-        } else {
-            avatarHtml = '<div class="picker-avatar-placeholder"><i class="fa-solid fa-user"></i></div>';
-        }
+        var msgIcon = p.msgSent
+            ? '<span style="color:#10ac84;font-size:12px;" title="Mesaj gönderildi"><i class="fa-solid fa-check-circle"></i></span>'
+            : '<span style="color:var(--text-muted);font-size:12px;" title="Mesaj gönderilmedi"><i class="fa-regular fa-circle"></i></span>';
 
-        return '<tr>' +
+        return '<tr onclick="openPickerModal(' + i + ')" title="Detay için tıkla">' +
             '<td style="color:var(--text-muted);font-weight:600;font-family:var(--font-mono);">' + (i + 1) + '</td>' +
-            '<td><div class="picker-row">' + avatarHtml + '<div><div class="picker-name">' + (p.name || p.login || 'Bilinmiyor') + '</div><div class="picker-login">' + (p.login || '') + '</div></div></div></td>' +
+            '<td><div class="picker-row">' + '' + '<div><div class="picker-name">' + (p.name || p.login || 'Bilinmiyor') + '</div><div class="picker-login">' + (p.login || '') + '</div></div></div></td>' +
             '<td>Kat ' + (p.floor || '?') + '</td>' +
             '<td>' + (p.manager || '-') + '</td>' +
             '<td><span class="idle-badge ' + badgeClass + '">' + idle + ' dk</span></td>' +
+            '<td>' + msgIcon + '</td>' +
             '<td style="color:var(--text-secondary);font-family:var(--font-mono);font-size:12px;">' + (p.lastSeen || '-') + '</td>' +
         '</tr>';
     }).join('');
 }
+
+// =========================================================
+//  PICKER DETAIL MODAL
+// =========================================================
+function openPickerModal(idx) {
+    var p = window._topPickersSorted && window._topPickersSorted[idx];
+    if (!p) return;
+
+    var idle = p.idleMin || 0;
+    var idleClass = idle > 30 ? 'accent' : (idle > 15 ? '' : 'accent3');
+
+    // Header
+    var headerHTML = '' +
+        '<div class="modal-header-text">' +
+            '<h2>' + (p.name || p.login || 'Bilinmiyor') + '</h2>' +
+            '<span class="modal-login">@' + (p.login || '-') + '</span>' +
+        '</div>';
+
+    // Floor changes
+    var floorChangesHTML = '';
+    if (p.floorChanges && Array.isArray(p.floorChanges) && p.floorChanges.length > 0) {
+        floorChangesHTML = '<div class="modal-info-item full-width">' +
+            '<div class="modal-info-label"><i class="fa-solid fa-shuffle"></i> Kat Değişimleri</div>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">' +
+            p.floorChanges.map(function(fc) {
+                if (typeof fc === 'object' && fc.from !== undefined) {
+                    return '<span class="modal-floor-change"><i class="fa-solid fa-arrow-right" style="font-size:10px;"></i> Kat ' + fc.from + ' \u2192 Kat ' + fc.to + (fc.time ? ' <span style="opacity:0.6;">(' + fc.time + ')</span>' : '') + '</span>';
+                }
+                return '<span class="modal-floor-change">' + fc + '</span>';
+            }).join('') +
+            '</div></div>';
+    } else if (typeof p.floorChanges === 'number' && p.floorChanges > 0) {
+        floorChangesHTML = '<div class="modal-info-item">' +
+            '<div class="modal-info-label"><i class="fa-solid fa-shuffle"></i> Kat Değişimi</div>' +
+            '<div class="modal-info-value accent2">' + p.floorChanges + ' kez</div>' +
+        '</div>';
+    }
+
+    // Message sent
+    var msgHTML;
+    if (p.msgSent) {
+        msgHTML = '<span class="modal-msg-badge modal-msg-sent"><i class="fa-solid fa-check-circle"></i> Gönderildi</span>';
+    } else {
+        msgHTML = '<span class="modal-msg-badge modal-msg-not"><i class="fa-regular fa-circle-xmark"></i> Gönderilmedi</span>';
+    }
+
+    // Body
+    var bodyHTML = '<div class="modal-info-grid">' +
+        '<div class="modal-info-item">' +
+            '<div class="modal-info-label"><i class="fa-solid fa-building"></i> Kat</div>' +
+            '<div class="modal-info-value accent2">Kat ' + (p.floor || '?') + '</div>' +
+        '</div>' +
+        '<div class="modal-info-item">' +
+            '<div class="modal-info-label"><i class="fa-solid fa-hourglass-half"></i> Idle Süresi</div>' +
+            '<div class="modal-info-value mono ' + idleClass + '">' + idle + ' dk</div>' +
+        '</div>' +
+        '<div class="modal-info-item">' +
+            '<div class="modal-info-label"><i class="fa-solid fa-user-tie"></i> Manager</div>' +
+            '<div class="modal-info-value">' + (p.manager || '-') + '</div>' +
+        '</div>' +
+        '<div class="modal-info-item">' +
+            '<div class="modal-info-label"><i class="fa-solid fa-location-dot"></i> Lokasyon</div>' +
+            '<div class="modal-info-value">' + (p.location || p.lastLocation || '-') + '</div>' +
+        '</div>' +
+        '<div class="modal-info-item">' +
+            '<div class="modal-info-label"><i class="fa-solid fa-envelope"></i> Mesaj Durumu</div>' +
+            '<div class="modal-info-value">' + msgHTML + '</div>' +
+        '</div>' +
+        '<div class="modal-info-item">' +
+            '<div class="modal-info-label"><i class="fa-regular fa-clock"></i> Son Görülme</div>' +
+            '<div class="modal-info-value mono" style="font-size:13px;">' + (p.lastSeen || '-') + '</div>' +
+        '</div>' +
+        floorChangesHTML +
+    '</div>';
+
+    document.getElementById('modalHeader').innerHTML = headerHTML;
+    document.getElementById('modalBody').innerHTML = bodyHTML;
+    document.getElementById('pickerModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePickerModal() {
+    document.getElementById('pickerModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Modal close: X button
+document.getElementById('modalCloseBtn').addEventListener('click', closePickerModal);
+
+// Modal close: click outside card
+document.getElementById('pickerModal').addEventListener('click', function(e) {
+    if (e.target === this) closePickerModal();
+});
+
+// Modal close: Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closePickerModal();
+});
 
 // ---- META INFO ----
 function renderMeta() {

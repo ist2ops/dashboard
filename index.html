@@ -787,7 +787,7 @@ a { color: var(--color-link, var(--color-primary)); }</style>
                         <th>Kat</th>
                         <th>Manager</th>
                         <th>Idle (dk)</th>
-                        <th>Haftalık Rate</th>
+                        <th>Günlük Rate</th>
                         <th>Durum</th>
                         <th>Son Görülme</th>
                     </tr>
@@ -865,14 +865,17 @@ function pickerAvatarHTML(p, size) {
     size = size || 34;
     var large = size > 40;
     var fontSize = Math.round(size * 0.4);
-    var fallback = '<div class=\'picker-avatar-initials' + (large ? ' large' : '') +
-        '\' style=\'background:' + getAvatarColor(p.login) + ';width:' + size + 'px;height:' + size +
-        'px;font-size:' + fontSize + 'px;\'>' + getInitials(p) + '</div>';
-    if (!p.login) return fallback;
-    return '<img src="' + BADGE_PHOTO_BASE + encodeURIComponent(p.login) + '" ' +
-        'class="picker-avatar" style="width:' + size + 'px;height:' + size + 'px;" ' +
-        'data-fallback="' + fallback + '" ' +
-        'onerror="this.outerHTML=this.dataset.fallback;" />';
+    var fallback = '<div class="picker-avatar-initials' + (large ? ' large' : '') +
+        '" style="background:' + getAvatarColor(p.login) + ';width:' + size + 'px;height:' + size +
+        'px;font-size:' + fontSize + 'px;">' + getInitials(p) + '</div>';
+    // v2.27: rozet fotosu userscript tarafindan (yetkili sayfada) cekilip
+    // gist paketine data-URL olarak gomuluyor. Kurum ici URL'yi <img> ile
+    // denemek anlamsiz: cookie gitmedigi icin QR/placeholder donuyordu.
+    if (p.photo && typeof p.photo === 'string' && p.photo.indexOf('data:image') === 0) {
+        return '<img src="' + p.photo + '" class="picker-avatar" ' +
+            'style="width:' + size + 'px;height:' + size + 'px;" />';
+    }
+    return fallback;
 }
 
 // =========================================================
@@ -1291,7 +1294,7 @@ function openPickerModal(idx) {
     headerHtml += pickerAvatarHTML(p, 56);
     headerHtml += '<div>';
     headerHtml += '<div style="font-size:20px;font-weight:700;color:#e0e0e0;">' + (p.name || p.login) + '</div>';
-    headerHtml += '<div style="font-size:13px;color:#a0a0b8;margin-top:4px;">' + (p.login || '') + ' | Kat: <span style="color:' + floorColor + ';font-weight:600;">' + (p.floor || '') + '</span> | Manager: ' + (p.manager || '') + ' | Haftalık Rate: ' + (typeof p.weeklyRate === 'number' ? '<span style="color:' + rateColorDash(p.weeklyRate) + ';font-weight:700;">' + p.weeklyRate + '%</span>' : '<span style="color:var(--text-muted);">-</span>') + '</div>';
+    headerHtml += '<div style="font-size:13px;color:#a0a0b8;margin-top:4px;">' + (p.login || '') + ' | Kat: <span style="color:' + floorColor + ';font-weight:600;">' + (p.floor || '') + '</span> | Manager: ' + (p.manager || '') + ' | Günlük Rate: ' + (typeof p.weeklyRate === 'number' ? '<span style="color:' + rateColorDash(p.weeklyRate) + ';font-weight:700;">' + p.weeklyRate + '%</span>' : '<span style="color:var(--text-muted);">-</span>') + '</div>';
     headerHtml += '<div style="margin-top:8px;font-size:24px;font-weight:800;color:#ff9800;font-family:Consolas,monospace;">Toplam Idle: ' + idleStr + '</div>';
     headerHtml += '</div>';
     headerHtml += '</div>'; // avatar+text flex wrapper

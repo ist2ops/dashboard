@@ -699,6 +699,7 @@ a { color: var(--color-link, var(--color-primary)); }</style>
         <div class="header-right">
             <span id="shiftInfo" class="status-badge live"><span class="pulse-dot"></span> Bağlanıyor...</span>
             <span id="lastUpdate" style="font-family: var(--font-mono);">--</span>
+            <span id="dataSourceInfo" style="font-family: var(--font-mono); margin-left:14px; color: var(--text-muted); font-size: 11px;"></span>
             <span id="autoRefreshTimer" style="color: var(--text-muted);"><i class="fa-solid fa-arrows-rotate"></i> 5:00</span>
         </div>
     </div>
@@ -1296,7 +1297,7 @@ function openPickerModal(idx) {
     headerHtml += pickerAvatarHTML(p, 56);
     headerHtml += '<div>';
     headerHtml += '<div style="font-size:20px;font-weight:700;color:#e0e0e0;">' + (p.name || p.login) + '</div>';
-    headerHtml += '<div style="font-size:13px;color:#a0a0b8;margin-top:4px;">' + (p.login || '') + ' | Kat: <span style="color:' + floorColor + ';font-weight:600;">' + (p.floor || '') + '</span> | Manager: ' + (p.manager || '') + ' | Günlük Rate: ' + (typeof p.weeklyRate === 'number' ? '<span style="color:' + rateColorDash(p.weeklyRate) + ';font-weight:700;">' + p.weeklyRate + '%</span>' : '<span style="color:var(--text-muted);">-</span>') + '</div>';
+    headerHtml += '<div style="font-size:13px;color:#a0a0b8;margin-top:4px;">' + (p.login || '') + ' | Kat: <span style="color:' + floorColor + ';font-weight:600;">' + (p.floor || '') + '</span> | Manager: ' + (p.manager || '') + ' | Günlük Rate: ' + (typeof p.weeklyRate === 'number' ? '<span style="color:' + rateColorDash(p.weeklyRate) + ';font-weight:700;">' + p.weeklyRate + '%</span>' : '<span style="color:var(--text-muted);">-</span>') + (p.processPath ? ' | İş Tipi: <span style="color:#90caf9;font-weight:600;">' + p.processPath + '</span>' : '') + '</div>';
     headerHtml += '<div style="margin-top:8px;font-size:24px;font-weight:800;color:#ff9800;font-family:Consolas,monospace;">Toplam Idle: ' + idleStr + '</div>';
     headerHtml += '</div>';
     headerHtml += '</div>'; // avatar+text flex wrapper
@@ -1525,6 +1526,20 @@ function renderMeta() {
     }
     if (currentData.shift || currentData.date) {
         shiftEl.innerHTML = '<span class="pulse-dot"></span> ' + (currentData.date || '') + ' | ' + (currentData.shift || '');
+    }
+    // v2.41: veriyi hangi script surumu ve hangi kaynak yazdi. Beklenenden eski bir
+    // surum gorunuyorsa tarayicida eski bir kopya hala calisiyor demektir.
+    var srcEl = document.getElementById('dataSourceInfo');
+    if (srcEl) {
+        var sv = currentData.scriptVersion, ds = currentData.dataSource;
+        if (!sv && !ds) { srcEl.innerHTML = ''; return; }
+        var parts = [];
+        if (sv) parts.push('script v' + sv);
+        if (ds) {
+            parts.push(ds === 'API' ? '<span style="color:#10ac84;font-weight:700;">kaynak: API</span>'
+                : '<span style="color:#f39c12;font-weight:700;">kaynak: ' + ds + '</span>');
+        }
+        srcEl.innerHTML = '<i class="fa-solid fa-database" style="margin-right:4px;"></i>' + parts.join(' &middot; ');
     }
 }
 

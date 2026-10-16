@@ -820,7 +820,9 @@ a { color: var(--color-link, var(--color-primary)); }</style>
 var GIST_ID = '2c83f09073d462622563534f4ca7cff1';
 var GITHUB_USERNAME = 'ist2ops';
 var BADGE_PHOTO_BASE = 'https://internal-cdn.amazon.com/badgephotos.amazon.com/?uid=';
-var REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+var REFRESH_INTERVAL_MS = 60 * 1000; // v2.32: 1 dakika (gist ucuz, bekletmeye gerek yok)
+var REFRESH_SEC = REFRESH_INTERVAL_MS / 1000;
+var STALE_WARN_MIN = 12;        // bu kadar dakikadan eski veri icin uyari
 var DATA_URL = 'https://gist.githubusercontent.com/' + GITHUB_USERNAME + '/' + GIST_ID + '/raw/ist2_dashboard_data.json';
 var TOP_N = 20; // Top N picker limit
 
@@ -830,7 +832,7 @@ var TOP_N = 20; // Top N picker limit
 var currentData = null;
 var activeFloor = 'all';
 var refreshTimer = null;
-var countdownSec = 300;
+var countdownSec = 60;
 
 // =========================================================
 //  AVATAR HELPERS
@@ -1504,7 +1506,19 @@ function renderMeta() {
 
     if (currentData.lastUpdate) {
         var d = new Date(currentData.lastUpdate);
-        updateEl.innerHTML = '<i class="fa-regular fa-clock" style="margin-right:4px;"></i>' + d.toLocaleString('tr-TR');
+        var ageMin = Math.floor((Date.now() - d.getTime()) / 60000);
+        var ageTxt, ageClr;
+        if (ageMin < 1)                   { ageTxt = 'az once';          ageClr = '#10ac84'; }
+        else if (ageMin < STALE_WARN_MIN) { ageTxt = ageMin + ' dk once'; ageClr = '#10ac84'; }
+        else if (ageMin < 60)             { ageTxt = ageMin + ' dk once'; ageClr = '#f39c12'; }
+        else                              { ageTxt = Math.floor(ageMin / 60) + ' sa ' + (ageMin % 60) + ' dk once'; ageClr = '#e94560'; }
+        updateEl.innerHTML = '<i class="fa-regular fa-clock" style="margin-right:4px;"></i>' + d.toLocaleString('tr-TR') +
+            ' <span style="color:' + ageClr + ';font-weight:700;">(' + ageTxt + ')</span>';
+        // v2.32: veri bayatsa goze batan uyari — eskiden sessizce eski veri gosteriyordu
+        if (ageMin >= STALE_WARN_MIN) {
+            showError('Veri ' + ageTxt + ' alinmis. Takip scripti calismiyor olabilir ' +
+                '(pick-workforce sekmesi kapali veya Gist token gecersiz).');
+        }
     }
     if (currentData.shift || currentData.date) {
         shiftEl.innerHTML = '<span class="pulse-dot"></span> ' + (currentData.date || '') + ' | ' + (currentData.shift || '');
@@ -1515,7 +1529,7 @@ function renderMeta() {
 //  AUTO-REFRESH with countdown
 // =========================================================
 function startAutoRefresh() {
-    countdownSec = 300;
+    countdownSec = REFRESH_SEC;
     if (refreshTimer) clearInterval(refreshTimer);
     refreshTimer = setInterval(function() {
         countdownSec--;
@@ -1528,8 +1542,10 @@ function startAutoRefresh() {
 
         if (countdownSec <= 0) {
             fetchData();
-            countdownSec = 300;
+            countdownSec = REFRESH_SEC;
         }
+        // veri yasi her saniye tazelenir, donmus deger gostermesin
+        if (currentData) renderMeta();
     }, 1000);
 }
 

@@ -1403,8 +1403,8 @@ function openPickerModal(idx) {
         bodyHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
         bodyHtml += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">#</th>';
-        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Başlangıç</th>';
-        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Bitiş</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;" title="Son okutma saati (Last Activity Time)">Son Okutma</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;" title="Yeniden okutma saati — idle burada bitti">Yeniden Okutma</th>';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Süre</th>';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Lokasyon</th>';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Tarama Saatleri</th>';
@@ -1417,7 +1417,10 @@ function openPickerModal(idx) {
             bodyHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">';
             bodyHtml += '<td style="padding:6px 8px;color:#a0a0b8;">' + (pi+1) + '</td>';
             bodyHtml += '<td style="padding:6px 8px;color:#e0e0e0;font-weight:500;">' + (pr.start || '-') + '</td>';
-            bodyHtml += '<td style="padding:6px 8px;color:#e0e0e0;font-weight:500;">' + (pr.end || '-') + '</td>';
+            var endCell = pr.ongoing
+                ? '<span style="color:#f39c12;">devam ediyor</span>'
+                : (pr.end || '-');
+            bodyHtml += '<td style="padding:6px 8px;color:#e0e0e0;font-weight:500;">' + endCell + '</td>';
             bodyHtml += '<td style="padding:6px 8px;"><span style="color:' + durColor + ';font-weight:700;">' + durStr + '</span></td>';
             bodyHtml += '<td style="padding:6px 8px;color:#a0a0b8;font-family:Consolas,monospace;font-size:11px;">' + (pr.location || '-') + '</td>';
             bodyHtml += '<td style="padding:6px 8px;color:#6c6c80;font-size:10px;">' + scanStr + '</td>';

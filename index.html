@@ -685,6 +685,14 @@ a { color: var(--color-link, var(--color-primary)); }</style>
         /* ===== HIGHCHARTS OVERRIDES ===== */
         .highcharts-background { fill: transparent !important; }
         .highcharts-tooltip-box { fill: #1a1a2e !important; }
+
+/* ===== 3D Raf Haritasi (gomulu) ===== */
+.map3d-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:inherit;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s}
+.map3d-btn:hover{background:rgba(255,255,255,.16)}
+.map3d-btn:disabled{opacity:.55;cursor:default}
+#map3dHost{display:none;position:fixed;inset:0;z-index:9000;background:#0f1a2b}
+#map3dHint{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:9100;background:#1a1a2e;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:12px 18px;font-size:13px;display:none}
+.header-left .map3d-btn{margin-left:4px}
     </style>
 </head>
 <body>
@@ -695,6 +703,7 @@ a { color: var(--color-link, var(--color-primary)); }</style>
                 <h1><i class="fa-solid fa-warehouse" style="-webkit-text-fill-color: var(--accent2); margin-right: 4px;"></i> IST2 Inactive Picker Tracker</h1>
                 <div class="subtitle">Real-time Picker İzleme Dashboard</div>
             </div>
+            <button class="map3d-btn" id="map3dLoad" type="button" title="Pickerların kat ve koridor konumlarını 3D haritada göster"><i class="fa-solid fa-cubes"></i> 3D Harita</button>
         </div>
         <div class="header-right">
             <span id="shiftInfo" class="status-badge live"><span class="pulse-dot"></span> Bağlanıyor...</span>
@@ -776,6 +785,7 @@ a { color: var(--color-link, var(--color-primary)); }</style>
                 <div id="chartMgr" style="height: 320px;"></div>
             </div>
         </div>
+
 
         <!-- Top 20 Table -->
         <div class="table-card">
@@ -1017,6 +1027,7 @@ function render() {
     renderMgrChart();
     renderTopTable();
     renderMeta();
+    map3dPush();
 }
 
 // ---- ANIMATED VALUE ----
@@ -1567,11 +1578,134 @@ function startAutoRefresh() {
     }, 1000);
 }
 
+
+// =========================================================
+//  3D RAF HARITASI (gomulu modul, Gist verisinden beslenir)
+// =========================================================
+var map3dLoaded = false, map3dLoading = false;
+
+function map3dDayStart() {
+    var d = String((currentData && currentData.date) || '');
+    var m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(d);
+    if (m) return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+    var u = Date.parse((currentData && currentData.lastUpdate) || '');
+    if (!u) return 0;
+    var dd = new Date(u); dd.setHours(0, 0, 0, 0); return dd.getTime();
+}
+
+function map3dHmToMs(hm, dayMs, refMs) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(hm || '').trim());
+    if (!m || !dayMs) return 0;
+    var t = dayMs + (+m[1]) * 3600000 + (+m[2]) * 60000;
+    // gece vardiyasinda saat sonraki gune tasarsa bir gun geri al
+    if (t > refMs + 300000) t -= 86400000;
+    return t;
+}
+
+function map3dFeed() {
+    if (!currentData || !Array.isArray(currentData.pickers)) return [];
+    var dayMs = map3dDayStart();
+    var updAt = Date.parse(currentData.lastUpdate || '') || Date.now();
+    return currentData.pickers.map(function (p) {
+        var act = 0, ongoing = false;
+        var per = Array.isArray(p.idlePeriods) ? p.idlePeriods : [];
+        for (var i = per.length - 1; i >= 0; i--) {
+            if (per[i] && per[i].ongoing) { ongoing = true; break; }
+        }
+        // v2.45 tracker gercek son okutma epoch'unu gonderir; yoksa periyottan tahmin edilir
+        var raw = Number(p.lastActivityMs);
+        if (isFinite(raw) && raw > 0) {
+            act = raw < 1e11 ? raw * 1000 : raw;
+        } else {
+            for (var j = per.length - 1; j >= 0; j--) {
+                if (per[j] && per[j].ongoing) {
+                    var t = map3dHmToMs(per[j].start, dayMs, updAt);
+                    if (t) act = t;
+                    break;
+                }
+            }
+            if (!act) act = updAt;
+        }
+        var fl = parseInt(String(p.floor || '').replace(/[^0-9]/g, ''), 10);
+        return {
+            login: p.login,
+            loc: p.location || '',
+            area: '',
+            floor: isFinite(fl) && fl > 0 ? fl : null,
+            activityMs: act,
+            photo: p.photo || '',
+            active: !ongoing
+        };
+    }).filter(function (p) { return p.login; });
+}
+
+function map3dPush() {
+    if (!map3dLoaded || !window.ITP3D) return;
+    try {
+        window.ITP3D.push(map3dFeed(), Date.parse((currentData && currentData.lastUpdate) || '') || Date.now());
+    } catch (e) { console.warn('[3D] besleme hatası:', e); }
+}
+
+// harita kapandiginda (Kapat / Escape) sayfa scroll'u geri gelir
+setInterval(function () {
+    if (!map3dLoaded || !window.ITP3D) return;
+    document.body.style.overflow = window.ITP3D.open ? 'hidden' : '';
+}, 300);
+
+function map3dOpen() {
+    if (map3dLoaded || map3dLoading) return;
+    if (!currentData) { alert('Önce verinin yüklenmesini bekle.'); return; }
+    map3dLoading = true;
+    var btn = document.getElementById('map3dLoad');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...'; }
+    document.body.style.overflow = 'hidden';
+    window.__IST2_3D_EMBED__ = true;
+    window.__IST2_3D_MOUNT__ = 'map3dHost';
+    window.__IST2_3D_FEED__ = map3dFeed();
+    window.__IST2_3D_FEED_AT__ = Date.parse(currentData.lastUpdate || '') || Date.now();
+    document.getElementById('map3dHost').style.display = 'block';
+    document.getElementById('map3dHint').style.display = 'none';
+    var sc = document.createElement('script');
+    sc.src = 'ist2-3d-map.js?v=269';
+    sc.onload = function () {
+        map3dLoaded = true; map3dLoading = false;
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cubes"></i> 3D Harita'; }
+        // veri birkac kez denenir: harita acilirken currentData henuz gelmemis olabilir
+        [80, 600, 1600, 3500].forEach(function (d) {
+            setTimeout(function () { if (window.ITP3D) { window.ITP3D.resize(); map3dPush(); } }, d);
+        });
+    };
+    sc.onerror = function () {
+        map3dLoading = false;
+        document.body.style.overflow = '';
+        document.getElementById('map3dHost').style.display = 'none';
+        var h = document.getElementById('map3dHint');
+        h.style.display = 'block';
+        h.style.padding = '14px 4px';
+        h.style.fontSize = '13px';
+        h.innerHTML = '<b style="color:#e74c3c;">ist2-3d-map.js yüklenemedi.</b><br>Dosyanın index.html ile aynı klasörde olduğundan emin ol.';
+        setTimeout(function () { h.style.display = 'none'; }, 6000);
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Tekrar Dene'; }
+    };
+    document.head.appendChild(sc);
+}
+
+(function () {
+    var lb = document.getElementById('map3dLoad');
+    if (lb) lb.addEventListener('click', function () {
+        if (map3dLoaded && window.ITP3D) { window.ITP3D.toggle(); setTimeout(function(){ if(window.ITP3D && window.ITP3D.open){ window.ITP3D.resize(); map3dPush(); } }, 60); return; }
+        map3dOpen();
+    });
+})();
+
 // =========================================================
 //  INITIALIZATION
 // =========================================================
 fetchData();
 startAutoRefresh();
 </script>
+
+<div id="map3dHost"></div>
+<div id="map3dHint"></div>
 
 </body></html>

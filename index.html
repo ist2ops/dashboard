@@ -1613,7 +1613,7 @@ function map3dFeed() {
     if (!currentData || !Array.isArray(currentData.pickers)) return [];
     var dayMs = map3dDayStart();
     var updAt = Date.parse(currentData.lastUpdate || '') || Date.now();
-    return currentData.pickers.map(function (p) {
+    var out = currentData.pickers.map(function (p) {
         var act = 0, ongoing = false;
         var per = Array.isArray(p.idlePeriods) ? p.idlePeriods : [];
         for (var i = per.length - 1; i >= 0; i--) {
@@ -1656,6 +1656,34 @@ function map3dFeed() {
             locStats: locStats
         };
     }).filter(function (p) { return p.login; });
+
+    // v2.52: currentData.pickers SADECE idle'i olanlari icerir (tracker idle<=0
+    // olanlari gondermez), bu yuzden harita calisanlarin ucte birini goruyordu.
+    // roster tam listedir; idle detayi olmayanlar da haritaya eklenir.
+    var roster = Array.isArray(currentData.roster) ? currentData.roster : [];
+    if (roster.length) {
+        var seen = {};
+        out.forEach(function (x) { seen[x.login] = true; });
+        roster.forEach(function (r) {
+            if (!r || !r.l || seen[r.l]) return;
+            var rf = parseInt(String(r.f || '').replace(/[^0-9]/g, ''), 10);
+            var ra = Number(r.a) || 0;
+            if (ra > 0 && ra < 1e11) ra = ra * 1000;
+            out.push({
+                login: r.l,
+                loc: r.c || '',
+                area: '',
+                floor: isFinite(rf) && rf > 0 ? rf : null,
+                activityMs: ra || updAt,
+                photo: '',
+                active: r.k === 1,
+                idleMin: 0,
+                curIdleMin: 0,
+                locStats: []
+            });
+        });
+    }
+    return out;
 }
 
 function map3dPush() {

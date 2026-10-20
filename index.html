@@ -1417,7 +1417,8 @@ function openPickerModal(idx) {
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">#</th>';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;" title="Son okutma saati (Last Activity Time)">Son Okutma</th>';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;" title="Yeniden okutma saati — idle burada bitti">Yeniden Okutma</th>';
-        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Süre</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;" title="Mola düşüldükten sonra kalan net idle süresi">Süre</th>';
+        bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;" title="Vardiya molasına denk geldiği için bu periyottan düşülen dakika">Mola</th>';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Lokasyon</th>';
         bodyHtml += '<th style="padding:6px 8px;text-align:left;color:#6c6c80;font-weight:500;">Tarama Saatleri</th>';
         bodyHtml += '</tr></thead><tbody>';
@@ -1434,6 +1435,12 @@ function openPickerModal(idx) {
                 : (pr.end || '-');
             bodyHtml += '<td style="padding:6px 8px;color:#e0e0e0;font-weight:500;">' + endCell + '</td>';
             bodyHtml += '<td style="padding:6px 8px;"><span style="color:' + durColor + ';font-weight:700;">' + durStr + '</span></td>';
+            // v2.48: mola olarak dusulen dakika. Tracker otomatik dusuyor, burada sadece gorunur kiliniyor.
+            var brMin = Number(pr.breakMin) || 0;
+            var brCell = brMin > 0
+                ? '<span style="color:#80cbc4;font-weight:600;" title="Ham süre ' + (Number(pr.rawMin) || (pr.duration + brMin)) + ' dk, molaya denk gelen ' + brMin + ' dk düşüldü">☕ -' + brMin + ' dk</span>'
+                : '<span style="color:#44445a;">–</span>';
+            bodyHtml += '<td style="padding:6px 8px;">' + brCell + '</td>';
             bodyHtml += '<td style="padding:6px 8px;color:#a0a0b8;font-family:Consolas,monospace;font-size:11px;">' + (pr.location || '-') + '</td>';
             bodyHtml += '<td style="padding:6px 8px;color:#6c6c80;font-size:10px;">' + scanStr + '</td>';
             bodyHtml += '</tr>';
@@ -1627,6 +1634,15 @@ function map3dFeed() {
             if (!act) act = updAt;
         }
         var fl = parseInt(String(p.floor || '').replace(/[^0-9]/g, ''), 10);
+        var curMin = 0;
+        for (var kk = per.length - 1; kk >= 0; kk--) {
+            if (per[kk] && per[kk].ongoing) { curMin = Number(per[kk].duration) || 0; break; }
+        }
+        var ls = p.locationStats || {};
+        var locStats = Object.keys(ls).map(function (key) { return { loc: key, min: Number(ls[key]) || 0 }; })
+            .filter(function (x) { return x.min > 0; })
+            .sort(function (a, b) { return b.min - a.min; })
+            .slice(0, 8);
         return {
             login: p.login,
             loc: p.location || '',
@@ -1634,7 +1650,10 @@ function map3dFeed() {
             floor: isFinite(fl) && fl > 0 ? fl : null,
             activityMs: act,
             photo: p.photo || '',
-            active: !ongoing
+            active: !ongoing,
+            idleMin: Number(p.idleMin) || 0,
+            curIdleMin: curMin,
+            locStats: locStats
         };
     }).filter(function (p) { return p.login; });
 }

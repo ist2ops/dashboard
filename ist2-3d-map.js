@@ -349,7 +349,9 @@ function markerMatch(p){return p.floor===state.floor&&areaMatch(p)&&(!state.pgMo
 function severity(p){const age=ageNow(p);if(p.active===false||(Number.isFinite(age)&&age>=15))return 'late';if(Number.isFinite(age)&&age>=10)return 'orange';if(Number.isFinite(age)&&age>=5)return 'warn';if(Number.isFinite(age))return 'good';return 'unknown'}
 const colorFor=(p)=>({good:'#22b77b',warn:'#eaae2d',orange:'#ee8428',late:'#d94d5c',unknown:'#8c9cad'})[severity(p)];
 
-function howOld(p){const a=ageNow(p);return Number.isFinite(a)?(a<1?'<1 dk':Math.floor(a)+' dk'):'—'}
+// v2.49: sureler saat+dakika olarak yazilir (318 dk -> 5 sa 18 dk)
+function fmtMin(m){m=Math.max(0,Math.floor(Number(m)||0));if(m<60)return m+' dk';const h=Math.floor(m/60),r=m%60;return r?h+' sa '+r+' dk':h+' sa';}
+function howOld(p){const a=ageNow(p);if(!Number.isFinite(a))return '—';if(a<1)return '<1 dk';return fmtMin(a);}
 async function unpack(mod){
   if(!window.DecompressionStream)throw Error('Firefox / Chrome güncel sürüm gerekli: DecompressionStream yok.');
   const raw=PACKED[mod],bin=Uint8Array.from(atob(raw),c=>c.charCodeAt(0));
@@ -624,11 +626,19 @@ function updateDetail(){
   const activeLabel=who.active===true?'API aktif':who.active===false?'API pasif':'API durumu bilinmiyor';
   html+=`<div class="person-head">${faceHTML(who,true)}<div><b>${escapeHtml(who.login)}</b>
     <div class="muted">Son hareket: ${escapeHtml(howOld(who))} · ${escapeHtml(activeLabel)}</div>
-    <span class="detail-status ${stateColor}">${stateText}${idle&&!stale&&!unknown?' · '+escapeHtml(howOld(who)):''}</span></div></div>`;
+    <span class="detail-status ${stateColor}">${stateText}${idle&&!stale&&!unknown?' · '+escapeHtml(who.curIdleMin>0?fmtMin(who.curIdleMin):howOld(who)):''}</span></div></div>`;
+  // v2.49: tracker'in hesapladigi (mola dusulmus) sureler
+  const curTxt=who.curIdleMin>0?fmtMin(who.curIdleMin):(idle?howOld(who):'—');
+  const totTxt=who.idleMin>0?fmtMin(who.idleMin):'—';
   html+=`<div class="detail-grid">
    <span class="k">Pick Area</span><span class="v">${escapeHtml(who.area||'—')}</span>
    <span class="k">Son bildirilen bin</span><span class="v code">${escapeHtml(who.loc||'Bilinmiyor')}</span>
+   <span class="k" title="Suren kesintisiz idle, vardiya molasi dusulmus">Şu anki idle</span><span class="v">${escapeHtml(curTxt)}</span>
+   <span class="k" title="Bu vardiyadaki toplam idle, vardiya molasi dusulmus">Vardiya toplamı</span><span class="v">${escapeHtml(totTxt)}</span>
    </div>`;
+  if(Array.isArray(who.locStats)&&who.locStats.length){
+   html+=`<div class="infobanner"><b>Lokasyona göre idle</b> <span class="muted">(mola düşülmüş)</span><br>${who.locStats.map(s=>`<span class="code">${escapeHtml(s.loc)}</span> — ${escapeHtml(fmtMin(s.min))}`).join('<br>')}</div>`;
+  }
   if(who.shuttle)html+=`<div class="infobanner warn">Shuttle X${who.shuttle.group}: koridor grubu eşleşti. İşaretin konumu tarife göre <b>yaklaşıktır</b>; gerçek slot koordinatı değildir.</div>`;
   if(stale)html+=`<div class="infobanner warn">Workforce verisi güncel değil. Konum ve inactive bilgileri son alınan kayıttır; canlı durum olarak yorumlama.</div>`;
   if(items.length)html+=`<div class="infobanner"><b>Bu sekmede görülen konumlar</b><br>${items.slice(-5).reverse().map(i=>`${timeLabel(i.when)} — ${escapeHtml(i.loc)}`).join('<br>')}</div>`;
@@ -645,7 +655,8 @@ function applyFeed(list){
     let dt=Number(p.activityMs);if(dt>0&&dt<1e11)dt*=1000;
     return{login:String(p.login||'').trim(),loc,area:String(p.area||'').trim(),floor:fl,module:where?.module||'',
      activityMs:Number.isFinite(dt)&&dt>0?dt:NaN,photo:safePhotoURL(p.photo||''),
-     active:p.active===true?true:p.active===false?false:null,bay:null};
+     active:p.active===true?true:p.active===false?false:null,bay:null,
+     idleMin:Number(p.idleMin)||0,curIdleMin:Number(p.curIdleMin)||0,locStats:Array.isArray(p.locStats)?p.locStats:[]};
    }).filter(p=>p.login);
    state.lastFetch=Number(window.__IST2_3D_FEED_AT__)||Date.now();state.workError='';
    recordMoves(state.pickers);reconcile();updateAreaMenu();checkAlerts();

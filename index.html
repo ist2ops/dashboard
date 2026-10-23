@@ -1652,6 +1652,7 @@ function map3dFeed() {
             photo: p.photo || '',
             active: !ongoing,
             idleMin: Number(p.idleMin) || 0,
+            floorIdle: Array.isArray(p.floorIdle) ? p.floorIdle : [],
             curIdleMin: curMin,
             locStats: locStats
         };
@@ -1678,6 +1679,7 @@ function map3dFeed() {
                 photo: '',
                 active: r.k === 1,
                 idleMin: 0,
+                floorIdle: [],
                 curIdleMin: 0,
                 locStats: []
             });
@@ -1713,7 +1715,7 @@ function map3dOpen() {
     document.getElementById('map3dHost').style.display = 'block';
     document.getElementById('map3dHint').style.display = 'none';
     var sc = document.createElement('script');
-    sc.src = 'ist2-3d-map.js?v=269';
+    sc.src = 'ist2-3d-map.js?v=2140';
     sc.onload = function () {
         map3dLoaded = true; map3dLoading = false;
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cubes"></i> 3D Harita'; }

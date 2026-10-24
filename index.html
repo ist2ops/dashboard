@@ -1663,6 +1663,26 @@ function map3dFeed() {
     // roster tam listedir; idle detayi olmayanlar da haritaya eklenir.
     var roster = Array.isArray(currentData.roster) ? currentData.roster : [];
     if (roster.length) {
+        // v2.15 HAYALET PICKER DUZELTMESI:
+        // roster = BU taramadaki tam picker listesi (Workforce tablosunun her satiri).
+        // currentData.pickers ise gun boyu idle gecmisi olan HERKESI tutar; vardiya
+        // icinde cikan / log-out olan kisi orada kalir. Birlesim alindigi icin harita
+        // 68 kisilik listeyi 135 gosteriyordu ve cikmis kisiler 'son hareket 3 saat once'
+        // oldugu icin inactive isaretleniyordu. Artik roster'da olmayan haritaya girmez.
+        var rmap = {};
+        roster.forEach(function (r) { if (r && r.l) rmap[r.l] = r; });
+        out = out.filter(function (x) { return !!rmap[x.login]; });
+        // roster bu taramanin taze konum / son-hareket degeri -> eslesen kayitlari guncelle
+        out.forEach(function (x) {
+            var r = rmap[x.login];
+            if (!r) return;
+            if (r.c) x.loc = r.c;
+            var rf2 = parseInt(String(r.f || '').replace(/[^0-9]/g, ''), 10);
+            if (isFinite(rf2) && rf2 > 0) x.floor = rf2;
+            var ra2 = Number(r.a) || 0;
+            if (ra2 > 0 && ra2 < 1e11) ra2 = ra2 * 1000;
+            if (ra2 > 0) x.activityMs = ra2;
+        });
         var seen = {};
         out.forEach(function (x) { seen[x.login] = true; });
         roster.forEach(function (r) {
@@ -1715,7 +1735,7 @@ function map3dOpen() {
     document.getElementById('map3dHost').style.display = 'block';
     document.getElementById('map3dHint').style.display = 'none';
     var sc = document.createElement('script');
-    sc.src = 'ist2-3d-map.js?v=2140';
+    sc.src = 'ist2-3d-map.js?v=2150';
     sc.onload = function () {
         map3dLoaded = true; map3dLoading = false;
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cubes"></i> 3D Harita'; }

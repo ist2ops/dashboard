@@ -692,6 +692,9 @@ canvas.grab{cursor:grabbing}
 #app .header .pill#fresh{display:inline-flex;align-items:center;gap:6px;border-radius:100px}
 #app .header .pill#fresh::before{content:'';width:6px;height:6px;border-radius:50%;
   background:currentColor;flex:0 0 6px;animation:ist2pulse 2s ease-in-out infinite}
+@keyframes ist2spin{to{transform:rotate(360deg)}}
+#app .header .btn.busy{opacity:.78}
+#app .header .btn i.spinning{display:inline-block;animation:ist2spin .7s linear infinite}
 @keyframes ist2pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
 
 /* stage: tasarimin nokta-izgara zemini */
@@ -704,7 +707,7 @@ canvas.grab{cursor:grabbing}
 const faStyle=document.createElement('style');faStyle.textContent=IST2_ICON_CSS;shadow.appendChild(faStyle);
 if(EMBED){const es=document.createElement('style');es.textContent='#app{position:absolute!important;inset:0!important;z-index:1}#launch{display:none!important}';shadow.appendChild(es);}
 const app=document.createElement('div');app.id='app';app.innerHTML=`
- <div class="header"><div class="brand"><div class="logo">▥</div><div><div class="eyebrow">IST2 · 3D PICKER MAP</div><div class="hname">3D Raf Haritası <em>v2.14 tasarım</em></div></div></div><span class="navsep"></span>
+ <div class="header"><div class="brand"><div class="logo">▥</div><div><div class="eyebrow">IST2 · 3D PICKER MAP</div><div class="hname">3D Raf Haritası <em>v2.15 tasarım</em></div></div></div><span class="navsep"></span>
   <div class="floorbar" id="floors">${[1,2,3,4,5,6].map(f=>`<button data-floor="${f}" class="${f===1?'active':''}">P${f}</button>`).join('')}</div><span class="navsep"></span>
   <select class="sel" id="module" title="Modül"></select><select class="sel" id="aisle" title="Koridor"><option value="">Tüm koridorlar</option></select><select id="area" class="sel" title="Pick Area"><option value="ALL">Tüm alanlar</option></select>
   <span class="flex"></span><span class="pill" id="fresh">${DEMO?'Çevrimdışı ön izleme':EMBED?'Dashboard verisi bekleniyor':'Workforce bekleniyor'}</span><span class="navsep"></span>
@@ -1219,7 +1222,7 @@ function applyFeed(list){
      active:p.active===true?true:p.active===false?false:null,bay:null,
      idleMin:Number(p.idleMin)||0,curIdleMin:Number(p.curIdleMin)||0,floorIdle:Array.isArray(p.floorIdle)?p.floorIdle:[],locStats:Array.isArray(p.locStats)?p.locStats:[]};
    }).filter(p=>p.login);
-   state.lastFetch=Number(window.__IST2_3D_FEED_AT__)||Date.now();state.workError='';
+   state.lastFetch=Number(window.__IST2_3D_FEED_AT__)||Date.now();state.lastApply=Date.now();state.workError='';
    recordMoves(state.pickers);reconcile();updateAreaMenu();checkAlerts();
    if(state.focused){const old=state.focused,c=state.pickers.find(p=>p.login===old.login);if(c)state.focused=c;}
   }
@@ -1605,7 +1608,29 @@ $('spacing').addEventListener('change',e=>changeSpacing(e.target.value));
 wired('toggleheat',()=>{state.heatmap=!state.heatmap;syncToggles();refreshMap()});
 wired('togglepg',()=>{state.pgMode=!state.pgMode;syncToggles();refreshMap()});
 wired('togglealert',()=>{state.alerts=!state.alerts;if(state.alerts){state.seenAlerts=new Set(state.pickers.filter(isIdle).map(p=>p.login));note('Mevcut inactive kayıtları atlandı; yenileri için uyarı açık.');}syncToggles()});
-wired('refresh',()=>{for(const [url,e] of state.photoCache){if(e.error){if(e.retryTimer)clearTimeout(e.retryTimer);state.photoCache.delete(url);}}refreshWorkers();});wired('go',search);wired('zoomin',()=>{state.view.zoom=Math.min(28,state.view.zoom*1.3);requestDraw()});
+wired('refresh',()=>{
+ if(state.refreshBusy)return;
+ for(const [url,e] of state.photoCache){if(e.error){if(e.retryTimer)clearTimeout(e.retryTimer);state.photoCache.delete(url);}}
+ const btn=$('refresh'),ico=btn?btn.querySelector('i'):null;
+ const beforeFetch=state.lastFetch||0,beforeApply=state.lastApply||0,t0=Date.now();
+ state.refreshBusy=true;if(ico)ico.classList.add('spinning');if(btn){btn.classList.add('busy');btn.setAttribute('aria-busy','true');}
+ const finish=(ok,fresh)=>{if(!state.refreshBusy)return;state.refreshBusy=false;clearInterval(poll);
+  if(ico)ico.classList.remove('spinning');if(btn){btn.classList.remove('busy');btn.removeAttribute('aria-busy');}
+  const st=timeLabel(state.lastFetch||Date.now());
+  if(!ok)note('Yenileme yanit vermedi - veri eski olabilir',true);
+  else if(fresh)note('Yenilendi - veri '+st);
+  else note('Yenilendi - yeni veri yok (son tarama '+st+')');};
+ let host=false;try{host=typeof window.__IST2_3D_REFRESH__==='function'&&window.__IST2_3D_REFRESH__()!==false;}catch(err){host=false;}
+ note('Yenileniyor...');
+ try{Promise.resolve(refreshWorkers()).catch(()=>{});}catch(err){}
+ const baseApply=state.lastApply||0,baseFetch=state.lastFetch||0;
+ var poll=setInterval(()=>{const dt=Date.now()-t0;
+  if(host){if((state.lastApply||0)>baseApply){finish(true,(state.lastFetch||0)>baseFetch);return;}}
+  else{if(!state.fetching&&(state.lastFetch||0)>beforeFetch){finish(true,true);return;}
+   if(!state.fetching&&dt>1500){finish(true,false);return;}}
+  if(dt>(host?25000:15000))finish(false,false);
+ },250);
+});wired('go',search);wired('zoomin',()=>{state.view.zoom=Math.min(28,state.view.zoom*1.3);requestDraw()});
 wired('zoomout',()=>{state.view.zoom=Math.max(.22,state.view.zoom/1.3);requestDraw()});
 wired('closepicker',()=>{void closePickerAndRestoreMap();});
 $('search').addEventListener('keydown',e=>{if(e.key==='Enter')search()});

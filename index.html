@@ -1677,6 +1677,8 @@ function map3dFeed() {
             var r = rmap[x.login];
             if (!r) return;
             if (r.c) x.loc = r.c;
+            // v2.61: pickers[] kaydinda foto yoksa roster kopyasindan al
+            if (!x.photo && r.p) x.photo = r.p;
             var rf2 = parseInt(String(r.f || '').replace(/[^0-9]/g, ''), 10);
             if (isFinite(rf2) && rf2 > 0) x.floor = rf2;
             var ra2 = Number(r.a) || 0;
@@ -1696,7 +1698,7 @@ function map3dFeed() {
                 area: '',
                 floor: isFinite(rf) && rf > 0 ? rf : null,
                 activityMs: ra || updAt,
-                photo: '',
+                photo: r.p || '',
                 active: r.k === 1,
                 idleMin: 0,
                 floorIdle: [],
@@ -1714,6 +1716,11 @@ function map3dPush() {
         window.ITP3D.push(map3dFeed(), Date.parse((currentData && currentData.lastUpdate) || '') || Date.now());
     } catch (e) { console.warn('[3D] besleme hatası:', e); }
 }
+
+// 3D haritadaki yenile butonu dashboard'un Gist fetch'ini tetikler
+window.__IST2_3D_REFRESH__ = function () {
+    try { fetchData(); return true; } catch (e) { console.warn('[3D] yenileme hatasi:', e); return false; }
+};
 
 // harita kapandiginda (Kapat / Escape) sayfa scroll'u geri gelir
 setInterval(function () {
@@ -1735,7 +1742,7 @@ function map3dOpen() {
     document.getElementById('map3dHost').style.display = 'block';
     document.getElementById('map3dHint').style.display = 'none';
     var sc = document.createElement('script');
-    sc.src = 'ist2-3d-map.js?v=2150';
+    sc.src = 'ist2-3d-map.js?v=2170';
     sc.onload = function () {
         map3dLoaded = true; map3dLoading = false;
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cubes"></i> 3D Harita'; }
